@@ -76,6 +76,21 @@ If you find this repository helpful, please give it a ⭐ **Star** — it's the 
 
 ---
 
+## 💬 Contact
+
+Want to discuss trending AI projects, share suggestions or feedback? Scan to add me on WeChat / join the QQ group:
+
+<p align="center">
+  <img src="./assets/wechat-qr.jpg" width="200" alt="WeChat QR" />
+  &nbsp;&nbsp;
+  <img src="./assets/qq-group-qr.jpg" width="200" alt="QQ Group QR" />
+</p>
+<p align="center">
+  WeChat &nbsp;|&nbsp; QQ Group
+</p>
+
+---
+
 ## 👤 Maintainer
 
 - Maintainer: **jiangdaxia** ([@jiangdaxia-AI](https://github.com/jiangdaxia-AI))

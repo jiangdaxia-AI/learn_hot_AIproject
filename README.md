@@ -76,6 +76,21 @@
 
 ---
 
+## 💬 联系我
+
+想交流热门 AI 项目、提建议或反馈？扫码加我微信 / 加入 QQ 群：
+
+<p align="center">
+  <img src="./assets/wechat-qr.jpg" width="200" alt="微信二维码" />
+  &nbsp;&nbsp;
+  <img src="./assets/qq-group-qr.jpg" width="200" alt="QQ群二维码" />
+</p>
+<p align="center">
+  微信 &nbsp;|&nbsp; QQ 群
+</p>
+
+---
+
 ## 👤 维护信息
 
 - 维护人：**jiangdaxia**（[@jiangdaxia-AI](https://github.com/jiangdaxia-AI)）
