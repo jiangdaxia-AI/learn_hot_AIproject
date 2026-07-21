@@ -1,5 +1,6 @@
 # 05 — 研究 Agent（Deep Research Pipeline）
 
+> Understand-Anything 知识图谱: 26 节点, 25 边, 7 层
 > **源码位置**：`deeptutor/agents/research/`
 > **核心文件**：`pipeline.py`（2800行）、`capability.py`（99行）、`mode_strategy.py`（149行）、`request_config.py`（249行）、`data_structures.py`（564行）
 > **辅助文件**：`utils/citation_manager.py`、`utils/json_utils.py`、`utils/token_tracker.py`
@@ -553,3 +554,4 @@ CitationManager 是研究阶段的"档案室"，负责：
 | 四种研究模式 | 不同场景需要不同的报告风格和深度 |
 | 强制使用工具 | 研究不能空口无凭，必须基于实际检索 |
 | 报告大纲自动修复 | AI 输出不完美时，通过代码逻辑补全，不阻塞流程 |
+

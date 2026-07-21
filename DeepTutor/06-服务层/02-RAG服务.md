@@ -1,5 +1,6 @@
 # RAG 服务
 
+> Understand-Anything 知识图谱: 26 节点, 25 边, 7 层
 > 源码：`deeptutor/services/rag/`（约 20 个文件，核心 ~3000 行）
 > 复杂度：`complex`
 
@@ -302,3 +303,4 @@ DeepTutor 支持多种 RAG Pipeline，按需路由：
 2. 检索质量依赖文档切块策略
 3. 对图片、表格中的信息检索效果较差
 4. 需要定期更新索引以反映文档变更
+

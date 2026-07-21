@@ -2,6 +2,7 @@
 
 # Clawith 源码剖析全书 — 目录与阅读指南
 
+> Understand-Anything 知识图谱: 16 节点, 21 边, 5 层
 > GitHub: https://github.com/dataelement/Clawith | commit c8ae41c | Apache 2.0
 > 分析时间: 2026-07-20 | CodeGraph: 16,323 nodes, 51,641 edges
 
@@ -236,6 +237,7 @@ Clawith 是一个值得深入研究的 AI Agent 协作平台。
 
 # Clawith 系统全景
 
+> Understand-Anything 知识图谱: 16 节点, 21 边, 5 层
 > GitHub: https://github.com/dataelement/Clawith | commit c8ae41c | Apache 2.0
 > 分析时间: 2026-07-20 | CodeGraph: 16,323 nodes, 51,641 edges
 
@@ -626,6 +628,7 @@ Agent 可以参与 OKR 管理：收集进度、生成报告、提醒更新。源
 
 # Clawith 架构总览
 
+> Understand-Anything 知识图谱: 16 节点, 21 边, 5 层
 > GitHub: https://github.com/dataelement/Clawith | commit c8ae41c | Apache 2.0
 > 分析时间: 2026-07-20 | CodeGraph: 16,323 nodes, 51,641 edges
 
@@ -1057,6 +1060,7 @@ Clawith 支持的通信渠道（7 个渠道）:
 
 # Clawith 核心模块详解
 
+> Understand-Anything 知识图谱: 16 节点, 21 边, 5 层
 > GitHub: https://github.com/dataelement/Clawith | commit c8ae41c | Apache 2.0
 > 分析时间: 2026-07-20 | CodeGraph: 16,323 nodes, 51,641 edges
 
@@ -1667,6 +1671,7 @@ Clawith 的"开箱即用"体验靠这些种子数据支撑。安装后自动创�
 
 # Clawith 核心流程
 
+> Understand-Anything 知识图谱: 16 节点, 21 边, 5 层
 > GitHub: https://github.com/dataelement/Clawith | commit c8ae41c | Apache 2.0
 > 分析时间: 2026-07-20 | CodeGraph: 16,323 nodes, 51,641 edges
 
@@ -1972,7 +1977,118 @@ Agent 对话中需要某个功能，但内置工具没有
 ### Slack
 方式: OAuth + Event Webhook
 配置: Bot Token + Signing Secret
-特点: 标准 OAuth 流程
+特点: 标准 OAuth 流程## 流程 3：Agent 生命周期管理
+
+Agent 从创建到销毁的完整生命周期（基于 `app/models/agent.py` 源码）：
+
+| 阶段 | 状态 | 发生什么 |
+|------|------|---------|
+| 创建 | creating | 管理员/用户创建 Agent，配置名称、角色描述、LLM 模型 |
+| 运行 | running | Agent 被唤醒，加载 soul.md + memory.md，开始执行任务 |
+| 空闲 | idle | Agent 完成任务后进入空闲状态，等待下一次唤醒 |
+| 停止 | stopped | Agent 被手动停止，释放容器资源 |
+| 错误 | error | Agent 运行中出现异常，记录错误日志 |
+
+Agent 的关键属性（基于源码）：
+- agent_type：`native`（平台托管）或 `openclaw`（远程 OpenClaw 机器人）
+- autonomy_policy：L1/L2/L3 三级自主策略，控制 Agent 可以自主决定哪些操作
+- context_window_size：默认 100，控制 Agent 的上下文窗口大小
+- primary_model_id / fallback_model_id：主模型和备用模型，Agent 可以在模型不可用时自动切换
+- container_id / container_port：Agent 运行时的容器信息
+
+## 流程 4：Aware 触发器系统（Agent 自主唤醒）
+
+基于 `app/models/trigger.py` 源码，Agent 可以通过 5 种触发器自主唤醒，不需要人类干预：
+
+| 触发器类型 | 触发方式 | 配置示例 | 业务场景 |
+|-----------|---------|---------|---------|
+| cron | cron 表达式 | `{"expr": "0 9 * * 1-5"}` | 每个工作日早上 9 点执行 |
+| once | 指定时间 | `{"at": "2026-03-10T09:00:00+08:00"}` | 在指定时间执行一次 |
+| interval | 固定间隔 | `{"minutes": 30}` | 每 30 分钟执行一次 |
+| poll | HTTP 轮询 | `{"url": "...", "json_path": "$.status"}` | 监控外部 API 状态变化 |
+| on_message | 消息触发 | 接收特定 Agent 消息时触发 | Agent 间协作 |
+
+每个触发器的高级属性：
+- reason：Agent 设置触发器时填写的理由，方便人类理解
+- focus_ref：关联的 Focus Item 标识符，把触发器与工作记忆关联
+- is_enabled：可随时启用/禁用，不需要删除
+- max_fires：最大触发次数，None 表示无限制
+- cooldown_seconds：冷却时间，默认 60 秒，防止频繁触发
+- is_system：系统触发器（平台预置），不可删除，只能启用/禁用
+
+## 流程 5：MCP 工具发现流程
+
+MCP（Model Context Protocol）让 Agent 能够自动发现和使用外部工具：
+
+1. 管理员在 Agent 模板中配置 MCP 服务器地址
+2. Agent 启动时自动连接 MCP 服务器
+3. MCP 服务器返回可用工具列表（read_file、execute_code、web_search 等）
+4. Agent 将工具列表注册到工具注册表
+5. 对话时，Agent 根据用户需求自动选择合适的工具
+6. 工具调用结果返回给 Agent，Agent 综合后生成回答
+
+MCP 工具发现的核心价值：Agent 不需要人类手动配置工具，可以自动发现和使用外部工具。这意味着 Agent 可以在运行时"学习"新技能，不需要重新部署。
+
+## 流程 6：Agent 技能创建（自主进化）
+
+基于 `app/models/skill.py` 源码，Agent 可以给自己创建技能：
+
+1. Agent 在对话中识别到需要某个技能
+2. Agent 创建 SKILL.md 文件（包含技能名称、描述、触发条件、工作流）
+3. 可选：Agent 创建辅助文件（scripts/、references/）
+4. 技能通过 `skill_files` 关系存储到数据库
+5. 技能注册到全局技能注册表
+6. 其他 Agent 也可以使用这个技能
+
+技能模型的完整字段：
+- name：技能名称（全局唯一）
+- description：技能描述
+- category：分类（general、code、data、communication 等）
+- icon：图标（emoji）
+- folder_name：文件夹名（全局唯一）
+- is_builtin：是否为内置技能
+- is_default：是否为默认技能
+
+## 流程 7：多 Agent 协作流程
+
+Clawith 的核心差异化能力是让多个 Agent 像一个团队一样协作：
+
+1. 用户创建多个 Agent，各自有独立的 soul.md、memory.md、工作空间
+2. Agent 通过 `on_message` 触发器互相唤醒
+3. Agent 通过 Plaza（信息流）共享工作成果
+4. Agent 通过 Focus Items 管理当前工作上下文
+5. 人类通过 Chat 界面和 Agent 管理界面协调 Agent 团队## 流程 8：渠道集成流程（Slack/Discord/Feishu）
+
+Clawith 支持 5 种渠道：Slack、Discord、Feishu（飞书）、DingTalk（钉钉）、WeCom（企业微信）。
+
+1. 管理员在 Agent 配置中添加渠道
+2. Agent 注册渠道回调（webhook 或 WebSocket）
+3. 用户在渠道中 @Agent 发送消息
+4. 渠道适配器将消息格式转换为统一的 Message 格式
+5. Agent 处理消息（同流程 1）
+6. 响应通过渠道适配器转换回渠道格式
+7. 用户收到回复
+
+## 流程 9：知识库 RAG 流程
+
+Agent 的知识库是 Agent 回答问题的"参考书"：
+
+1. 用户上传文档（PDF、Word、Markdown、网页）到知识库
+2. 系统解析文档，提取文本内容
+3. 文本被切分为 chunks（文档片段）
+4. chunks 通过 Embedding 模型向量化
+5. 向量存入向量数据库
+6. Agent 对话时，查询向量化后搜索知识库
+7. 相关 chunks 作为上下文注入 Agent 的 Prompt
+8. Agent 基于知识库内容回答
+
+## 总结
+
+Clawith 的核心流程围绕 Agent 的自主决策能力展开。从一次对话的完整旅程，到 Agent 的生命周期管理，再到 Aware 触发器系统、MCP 工具发现、技能创建和多 Agent 协作——每个流程都体现了 Clawith 的设计理念：让 Agent 像真正的数字员工一样自主工作，而不是被动等待人类指令。
+
+---
+
+*本章基于 `app/models/trigger.py`、`app/models/agent.py`、`app/models/skill.py` 等真实源码编写。*
 
 ---
 
@@ -1980,6 +2096,7 @@ Agent 对话中需要某个功能，但内置工具没有
 
 # Clawith 核心数据实体
 
+> Understand-Anything 知识图谱: 16 节点, 21 边, 5 层
 > GitHub: https://github.com/dataelement/Clawith | commit c8ae41c | Apache 2.0
 > 分析时间: 2026-07-20 | CodeGraph: 16,323 nodes, 51,641 edges
 

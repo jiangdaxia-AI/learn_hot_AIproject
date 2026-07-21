@@ -1,5 +1,6 @@
 # LLM 服务层源码剖析
 
+> Understand-Anything 知识图谱: 26 节点, 25 边, 7 层
 > **源码路径**：`deeptutor/services/llm/`
 > **核心入口**：`__init__.py`（重新导出工厂函数）、`factory.py`（统一工厂）、`provider_core/openai_compat_provider.py`（OpenAI 兼容提供者）、`provider_core/anthropic_provider.py`（Anthropic 提供者）、`local_provider.py`（本地模型提供者）
 > **阅读对象**：产品经理 / 运营 / 非技术人员
@@ -455,3 +456,4 @@ LLM 服务层是 DeepTutor 的"模型中立层"。它的核心价值在于：
 4. **资源保护**：流量控制防止 API 超额，上下文窗口守卫防止 token 超限
 
 **一句话总结**：LLM 服务层让 DeepTutor 成为一个"模型无关"的 AI 教学平台——不管底层用什么模型，上层体验一致。
+

@@ -1,5 +1,6 @@
 # AgenticChatPipeline — 聊天能力组装与 AgentLoop 编排器
 
+> Understand-Anything 知识图谱: 26 节点, 25 边, 7 层
 > 源码位置：`deeptutor/agents/chat/agentic_pipeline.py`（1386 行）
 > 核心类：`AgenticChatPipeline`（第 181 行）
 > 配合类：`AgentLoop`（`agent_loop.py` 第 149 行，667 行）
@@ -299,3 +300,4 @@ AgenticChatPipeline 是 DeepTutor 聊天的总控中心。它把用什么模型�
 3. _build_loop_messages() -> 理解提示词如何构建
 4. agent_loop.py 的 _run_loop() -> 理解 LLM 调用和工具分发
 5. _augment_tool_kwargs() -> 理解每个工具的参数注入
+

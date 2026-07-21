@@ -1,5 +1,6 @@
 # Memory 服务
 
+> Understand-Anything 知识图谱: 26 节点, 25 边, 7 层
 > 源码：`deeptutor/services/memory/`（约 10 个文件，核心 ~1500 行）
 > 复杂度：`complex`
 
@@ -304,3 +305,4 @@ L3 是跨会话的持久记忆，按"表面"（Surface）组织。每个 Surface
 - Consolidator 支持 dry-run 模式（预览而不写入）
 - Memory 操作支持回滚
 - 提供测试夹具（fixture）快速创建测试数据
+

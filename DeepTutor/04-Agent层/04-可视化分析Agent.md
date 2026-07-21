@@ -1,5 +1,6 @@
 # 04 — 可视化分析 Agent（Visualize Pipeline）
 
+> Understand-Anything 知识图谱: 26 节点, 25 边, 7 层
 > **源码位置**：`deeptutor/agents/visualize/`
 > **核心文件**：`pipeline.py`（91行）、`capability.py`（574行）、`models.py`（89行）、`utils.py`（190行）
 > **子 Agent**：`agents/analysis_agent.py`（103行）、`agents/code_generator_agent.py`（119行）、`agents/review_agent.py`（75行）
@@ -421,3 +422,4 @@ validate_visualization(code, "svg")
 | Manim 独立分支 | Manim 是完整的子管线，有自己的分析→设计→生成→渲染→总结流程 |
 | SVG 大小写敏感检查 | 一个字母的大小写错误可能导致整个图无法渲染，这是实际踩过的坑 |
 | 防御性代码清理 | AI 输出常有"多余的话"，需要裁剪到纯代码 |
+

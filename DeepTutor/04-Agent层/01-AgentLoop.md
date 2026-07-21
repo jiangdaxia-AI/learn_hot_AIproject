@@ -1,5 +1,6 @@
 # AgentLoop
 
+> Understand-Anything 知识图谱: 26 节点, 25 边, 7 层
 > 节点 ID：`agent_loop` | 类型：class | 复杂度：complex
 > 知识图谱摘要：核心对话 Agent 循环：管理 LLM 调用、工具执行、上下文折叠、流式响应
 
