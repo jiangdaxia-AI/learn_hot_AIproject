@@ -1,258 +1,140 @@
-# 03-06 · SquillaRouter 路由层 — 深度剖析
+# 03-06 · 智能路由层 — 大白话教材
 
-> **文件数**：34 个文件 | **核心类**：SquillaRouter (predictor.py:257) | **技术**：LightGBM 机器学习模型 | **学术论文**：arxiv.org/abs/2607.11399 | **codegraph 符号**：71 个
+> **面向读者**：产品经理、运营人员 | **难度**：⭐⭐ 进阶 | **阅读时间**：约 15 分钟
 
 ---
 
-## 定位
+## 一句话说清楚
 
-SquillaRouter 是 OpenSquilla 的**智能调度员**。每次用户发消息，路由器先判断任务难度，然后决定用哪个模型——简单问题用便宜模型，复杂问题才用贵模型。这能大幅降低 AI 使用成本。
-
-核心原理：本地运行一个 LightGBM 分类模型，每次推理只需几毫秒，不消耗网络请求。
+智能路由层是 OpenSquilla 的"智能调度员"。每次用户发消息，它先判断任务难度，然后决定用哪个 AI 模型——简单问题用便宜模型，复杂问题才用贵模型。这能大幅降低 AI 使用成本。
 
 ---
 
 ## 生活化比喻
 
-> SquillaRouter 像**滴滴的智能派单系统**。你去楼下便利店（简单任务），系统派一辆共享单车（便宜模型）；你要去机场（复杂任务），系统派一辆专车（贵模型）。系统通过分析你的历史行程（历史对话）、当前时间地点（上下文特征）、目的地（任务复杂度），自动做出最优决策。
+> 智能路由层像**滴滴的智能派单系统**。你去楼下便利店（简单任务），系统派一辆共享单车（便宜模型）；你要去机场（复杂任务），系统派一辆专车（贵模型）。系统通过分析你的历史行程（历史对话）、当前时间地点（上下文特征）、目的地（任务复杂度），自动做出最优决策。
 
 ---
 
-## 一、机器学习模型架构
+## 一、它怎么判断任务难度？
 
-### 1.1 模型类型：LightGBM 梯度提升树
+路由层在本地运行一个轻量级的"智能分类器"（基于决策树算法，叫 LightGBM），每次判断只需要几毫秒，不消耗网络请求。它从用户消息中提取 8 个维度的特征来判断任务难度：
 
-SquillaRouter 使用 LightGBM 作为分类器，将每个用户请求分类为 4 个难度层级之一。模型文件：lgbm_model.bin（predictor.py:286）
+### 8 个判断维度（就像快递分拣的 8 道扫描）
 
-### 1.2 模型版本管理
-
-路由模型通过 model_dir/version.json 声明版本。当前支持 v4 版本，SquillaRouter 工厂类自动检测版本并分发到 V4Router（predictor.py:264-273）：
-
-```
-SquillaRouter.__new__()
-  ↓ 读取 version.json
-  ↓ version == "v4" → V4Router(model_dir)
-  ↓ 否则 → 默认 SquillaRouter 初始化
-```
-
----
-
-## 二、特征工程：5 通道特征提取
-
-FeatureExtractor (features.py) 从用户消息中提取 5 个通道的特征，拼接成最终特征向量：
-
-### 通道 1：手工特征 (HANDCRAFTED_DIMS = 51 维)
-
-| 特征类别 | 示例特征 | 维度 |
-|----------|---------|------|
-| 文本统计 | 字数、句子数、平均句长、问号数 | ~10 |
-| 代码特征 | 是否含代码块、代码语言类型、代码行数 | ~10 |
-| 关键词匹配 | 搜索/分析/写/实现/修复等关键词计数 | ~15 |
-| 复杂度指标 | 大写字母比例、特殊字符密度、URL 数量 | ~10 |
-| 格式特征 | 列表项数、标题层级、引用块数 | ~6 |
-
-### 通道 2：上下文特征 (CONTEXT_DIMS = 10 维)
-
-ContextMetadata (features.py:164) 从会话上下文中提取：
-
-| 字段 | 说明 |
-|------|------|
-| turn_index | 当前是第几轮对话 |
-| context_tokens_est | 估算上下文 token 数 |
-| n_tools | 可用工具数量 |
-| tool_result_length | 上次工具结果长度 |
-| has_code_block | 历史是否含代码块 |
-| has_file_reference | 是否引用了文件 |
-| has_url | 是否包含 URL |
-| has_tool_results | 是否包含工具结果 |
-
-### 通道 3：历史特征 (HIST_DIMS = 16 维)
-
-extract_hist_features() (features.py:108) 从历史对话中提取 16 维向量：
-
-```
-Layout:
-  [0] prev_route_idx      # 上一轮的难度层级
-  [1] prev_difficulty      # 上一轮的难度分数
-  [2] prev_margin          # 上一轮的分类置信度边距
-  [3] max_route_idx        # 历史最高难度层级
-  [4] turn_index           # 当前轮次
-  [5] history_len          # 历史长度
-  [6] dominant_route       # 历史主导层级（出现次数最多的层级）
-  [7] switches             # 层级切换次数
-  [8..15] trajectory one-hot  # 8 种对话轨迹类型的 one-hot 编码
-```
-
-### 通道 4：TF-IDF 特征 (降维后)
-
-对文本做 TF-IDF 向量化，再通过 SVD 降维（_TFIDF_SVD_DIMS 维度），捕捉文本的主题分布。
-
-### 通道 5：BGE 嵌入特征 (降维后)
-
-使用 BGE 模型（BAAI General Embedding）将文本编码为语义向量，再通过 PCA 降维（_BGE_PCA_DIMS 维度），捕捉深层语义。
+| 维度 | 看什么 | 大白话 |
+|------|--------|--------|
+| 1. 文本统计 | 字数、句子长短、问号数量 | 看消息有多长、多复杂 |
+| 2. 代码特征 | 有没有代码、什么语言、代码行数 | 是不是在写代码？ |
+| 3. 关键词 | 有没有"搜索"、"分析"、"实现"、"修复"等词 | 通过动词判断任务类型 |
+| 4. 复杂度 | 大写字母比例、特殊符号密度、链接数量 | 内容是否"技术含量高" |
+| 5. 格式特征 | 列表项数、标题层级、引用块数 | 消息结构是否复杂 |
+| 6. 上下文 | 当前第几轮对话、上下文有多长、用了多少工具 | 聊天深度如何？ |
+| 7. 历史轨迹 | 上一轮用的什么模型、难度变化趋势、切换次数 | 历史表现怎样？ |
+| 8. 深层语义 | 用 AI 理解文字的真实含义 | 语义层面是否复杂？ |
 
 ---
 
-## 三、推理流程：predict() 方法（8 步）
+## 二、4 级难度分类
 
-predict() 方法 (predictor.py:292-332) 是路由器的核心推理入口：
-
-**步骤 1：轨迹分类** — classify_trajectory(history) 分析历史对话模式，输出 8 种轨迹类型之一（NEW_TOPIC/CONTINUATION/REFINEMENT/DEEPENING/...）
-
-**步骤 2：特征提取** — self._extractor.transform(text, context, history, trajectory) 提取 5 通道特征，拼接为 1 维向量
-
-**步骤 3：维度校验** — 检查特征维度是否与模型期望匹配（expected_dims vs actual_dims），不匹配则抛出 ValueError
-
-**步骤 4：LightGBM 推理** — self._model.predict(features) 输出 4 分类原始概率（raw_probs）
-
-**步骤 5：概率标准化** — 将 raw_probs 映射为 R0/R1/R2/R3 的概率字典（probs）
-
-**步骤 6：置信度计算** — 最高概率与次高概率之差（margin），判断分类是否可靠
-
-**步骤 7：难度分数** — difficulty_score = sum(i * p_i)，加权平均量化任务难度
-
-**步骤 8：后处理** — apply_post_processing(raw_probs, text, config, context, history) 应用规则后处理，输出最终层级和标志位
+| 难度级别 | 难度 | 决策 | 适合什么任务 | 用的模型 |
+|---------|------|------|------------|---------|
+| R0（简单） | 简单 | 最便宜模型 | 闲聊、简单问答、格式转换 | deepseek-v4-flash |
+| R1（中等） | 中等 | 中档模型 | 代码编写、文档生成、数据分析 | deepseek-v4-pro |
+| R2（困难） | 困难 | 高档模型 | 复杂算法、架构设计、多文件工程 | kimi-k2.7-code |
+| R3（极难） | 极难 | 最强模型 | 需要最强推理能力的任务 | glm-5.2 |
 
 ---
 
-## 四、CascadeRouter：两级级联路由
+## 三、路由决策的完整流程——从消息到模型选择
 
-CascadeRouter (predictor.py:339) 是更复杂的路由策略，使用 3 个 LightGBM 模型进行两级分类：
+整个过程就像**快递分拣系统**：
 
 ```
-输入文本
-  ↓
-Stage 1: 轻量/重量分类 (cascade_stage1.bin)
-  ├── 轻量 (s1_prob <= 0.4)
-  │     ↓
-  │   Stage 2a: R0 vs R1 分类 (cascade_stage2a.bin)
-  │     ├── s2a_prob > 0.5 → R1
-  │     └── s2a_prob <= 0.5 → R0
+用户消息 "帮我写一个排序算法"
   │
-  └── 重量 (s1_prob > 0.4)
-        ↓
-      Stage 2b: R2 vs R3 分类 (cascade_stage2b.bin)
-        ├── s2b_prob > 0.5 → R3
-        └── s2b_prob <= 0.5 → R2
+  ▼
+步骤 1：收件
+  收到消息，先看看是不是特殊件（有图片？手动指定了模型？）
+  │
+  ▼
+步骤 2：8 通道扫描
+  用 8 个维度扫描消息，提取约 390 个特征值
+  （字数、代码行数、关键词、历史轨迹、语义深度...）
+  │
+  ▼
+步骤 3：三台"分拣机"同时判断
+  ├─ 主分拣机：看过最多样本，最有经验
+  ├─ 辅助分拣机：专门看"是不是该降级"
+  └─ 语义分拣机（神经网络）：从语义角度补充判断
+  │
+  三台机器的结果按权重融合
+  │
+  ▼
+步骤 4：人工复核（8 条安全规则）
+  ├─ 规则1：选概率最高的级别
+  ├─ 规则2：不确定时宁可升级（多花点钱，别用弱模型处理复杂任务）
+  ├─ 规则3：辅助模型判断是否应该降级
+  ├─ 规则4：R0和R1差距太小时，提到R1（避免简单任务被低估）
+  ├─ 规则5：如果R2+R3概率之和超过45%，强制提到R2（安全底线）
+  ├─ 规则6：特殊标记强制提升（高风险内容→至少R2）
+  ├─ 规则7：深层次对话（第4轮以上）→至少R1
+  └─ 规则8：如果上一轮用了高级模型，本轮尽量不动（避免切换开销）
+  │
+  ▼
+步骤 5：打印面单
+  决定用什么模型、要不要开启"思考模式"、用什么提示词策略
+  │
+  ▼
+最终输出：C0 → deepseek-v4-flash（发货！）
 ```
-
-级联优势：Stage 1 阈值偏向"重量"（0.4），避免简单任务被错误路由到弱模型。
 
 ---
 
-## 五、4 级难度分类映射
+## 四、用户可以手动切换模型
 
-| 层级 | 难度 | 路由决策 | 适用任务 | 默认模型 |
-|------|------|---------|---------|---------|
-| R0 (C0) | 简单 | 最便宜模型 | 闲聊、简单问答、格式转换 | deepseek-v4-flash |
-| R1 (C1) | 中等 | 中档模型 | 代码编写、文档生成、数据分析 | deepseek-v4-pro |
-| R2 (C2) | 困难 | 高档模型 | 复杂算法、架构设计、多文件工程 | kimi-k2.7-code |
-| R3 (C3) | 极难 | 最强模型 | 需要最强推理能力的任务 | glm-5.2 |
+用户可以通过命令手动指定模型，比如想用高级模型处理复杂任务：
 
----
-
-## 六、RoutingResult 输出结构
-
-每次推理返回 RoutingResult 对象 (predictor.py:324-332)：
-
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| route_class | str | 最终路由层级 (R0/R1/R2/R3) |
-| probabilities | dict | 4 分类概率 |
-| difficulty_score | float | 难度分数 (0-3) |
-| margin | float | 置信度边距 |
-| flags | dict | 后处理标志位 |
-| tier | str | 模型层级 ID |
-| thinking_mode | str | 思考模式 (auto/on/off) |
-| prompt_policy | str | 提示词策略 |
-| prompt_hint | str | 提示词提示 |
-| selected_model | str | 选中的模型名称 |
-| trajectory | str | 对话轨迹类型 |
-| model_version | str | 模型版本 |
+| 操作 | 说明 |
+|------|------|
+| 临时切换 | 手动指定用哪个档位的模型，一段时间后自动恢复 |
+| 恢复自动 | 让系统重新自动判断任务难度 |
 
 ---
 
-## 七、模型训练管线
+## 五、模型自学习闭环——"越用越聪明"
 
-1. 从真实代理流量中收集标注数据（JSONL 格式）
-2. 每条样本包含：text + session_context + tool_context + route_class 标签
-3. 特征提取 (FeatureExtractor.fit) 训练 TF-IDF 向量化器和 PCA 降维器
-4. BGE 嵌入 (BGE_PCA_DIMS) 训练 PCA 降维
-5. LightGBM 训练 (lgb.train) 多分类模型
-6. 模型导出为 lgbm_model.bin + features/ 目录
-7. 验证集评估准确率和 margin 分布
+智能路由层不是"训练好就固定不变"的静态模型。它有一套完整的**自学习闭环**（也叫数据飞轮），能在使用过程中持续改进。
 
-> 来源：codegraph explore squilla_router, predictor.py L257-L332, L339-L407, features.py L91-L189, cascade config
+### 飞轮全景图
 
+```
+ ┌──────────────────────────────────────────────────┐
+ │                                                  │
+ │   ① 每次路由决策 → 记录训练样本（不存原文，保护隐私）│
+ │      （只存特征向量，约 0.78 KB）                  │
+ │                                                  │
+ │   ② 用户反馈（点赞👍 / 点踩👎）                    │
+ │      点踩会被特别重视——"刚才那个判断错了！"          │
+ │                                                  │
+ │   ③ 定期重新训练（用户不活跃时，后台自动进行）       │
+ │      至少间隔 72 小时，不会频繁训练                 │
+ │                                                  │
+ │   ④ 新模型无缝切换（用户无感知）                    │
+ │      自动检查新旧兼容性，不兼容就回退                │
+ │                                                  │
+ │   ⑤ 在线监控 + 自动回滚                             │
+ │      投诉率或点踩率上升 → 自动回退到旧版本          │
+ │                                                  │
+ └──────────────────────────────────────────────────┘
+```
+
+### 大白话总结
+
+> 这个自学习闭环就像**自动驾驶汽车的持续改进系统**：每次行车都记录决策 → 乘客可以点赞/点踩 → 闲置时后台分析数据重新学习 → 新模型无缝切换 → 如果数据变差自动回退。整个过程用户完全无感。
 
 ---
 
-## 七、predict() 后处理详解（5 个子函数）
+## 六、对产品/运营同学的一句话总结
 
-predict() 在 LightGBM 输出 4 类概率后，通过 5 个后处理函数做最终决策：
-
-### 7.1 _apply_flag_overrides(raw_probs, flags)
-```
-根据 flags 覆盖原始概率：
-  - force_auto → 忽略路由，使用自动模式
-  - force_tier:X → 强制使用指定层级
-  - no_ensemble → 禁用 ensemble 模式
-源码：predictor.py _apply_flag_overrides()
-```
-
-### 7.2 _derive_thinking_mode(config, tier)
-```
-根据层级和配置推导思考模式：
-  - C0 (Flash)：无思考模式
-  - C1 (Pro)：轻量思考
-  - C2 (Code)：标准思考
-  - C3 (GLM)：深度思考
-源码：predictor.py _derive_thinking_mode()
-```
-
-### 7.3 _derive_prompt_policy(config, tier)
-```
-根据层级推导提示词策略：
-  - 系统提示词模板选择
-  - 工具定义压缩策略
-  - 上下文窗口分配
-源码：predictor.py _derive_prompt_policy()
-```
-
-### 7.4 _get_prompt_hint(tier, context)
-```
-根据层级和上下文生成提示词提示：
-  - 低层级：简洁提示
-  - 高层级：详细指令
-源码：predictor.py _get_prompt_hint()
-```
-
-### 7.5 _select_model(tier, config)
-```
-根据层级和配置选择具体模型：
-  - 读取 tier 配置中的 model 字段
-  - 检查模型可用性
-  - 返回模型 ID
-源码：predictor.py _select_model()
-```
-
-> 来源：codegraph explore squilla_router — predict() calls 列表包含这 5 个函数
-
----
-
-## 八、路由器控制工具 (router_control)
-
-用户可以手动切换模型层级，通过 router_control 工具 (tools/builtin/router_control.py)：
-
-| 操作 | 参数 | 说明 |
-|------|------|------|
-| set_hold | action="set_hold", target_id="tier:c2", evidence="..." | 临时切换到 C2 层级 |
-| clear_hold | action="clear_hold" | 恢复自动路由 |
-
-Hold 配置：
-- DEFAULT_HOLD_TTL_SECONDS：默认保持时间
-- DEFAULT_HOLD_TURNS：默认保持轮次
-
-可用层级：tier:c0 (deepseek-v4-flash) / tier:c1 (deepseek-v4-pro) / tier:c2 (kimi-k2.7-code) / tier:c3 (glm-5.2)
-
-> 来源：tools/builtin/router_control.py:16-52, router_control.py set_hold()
+> 智能路由层让 AI 使用成本"能省则省"。简单聊天用便宜模型（几厘钱），复杂任务才用贵模型（几分钱），平均能节省 60% 以上的模型调用费用。而且它越用越聪明，会根据用户反馈自动优化判断。用户也可以手动切换模型档位。
