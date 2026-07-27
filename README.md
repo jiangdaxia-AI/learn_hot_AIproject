@@ -12,7 +12,7 @@
   <a href="https://github.com/jiangdaxia-AI/learn_hot_AIproject"><img src="https://img.shields.io/github/repo-size/jiangdaxia-AI/learn_hot_AIproject?label=Repo%20Size" alt="Repo Size"></a>
   <a href="https://github.com/jiangdaxia-AI/learn_hot_AIproject"><img src="https://img.shields.io/github/languages/count/jiangdaxia-AI/learn_hot_AIproject?label=Languages" alt="Languages"></a>
   <img src="https://img.shields.io/badge/updated-continuously-brightgreen?label=Update" alt="Continuously Updated">
-  <img src="https://img.shields.io/badge/projects-3%20%26%20growing-blue?label=Projects" alt="Projects">
+  <img src="https://img.shields.io/badge/projects-6%20%26%20growing-blue?label=Projects" alt="Projects">
 </p>
 
 ---
@@ -30,8 +30,11 @@
 | 项目 | 简介 | 技术栈 | 源码仓库 |
 |------|------|--------|----------|
 | **DeepTutor** | HKUDS 实验室开源的 AI 驱动终身个性化辅导系统，多 Agent 架构 | Python / FastAPI / RAG | [HKUDS/DeepTutor](https://github.com/HKUDS/DeepTutor) |
-| **Clawith** | dataelement 开源的项目，6 层架构，16,323 代码节点 | — | [dataelement/Clawith](https://github.com/dataelement/Clawith) |
+| **Clawith** | dataelement 开源的多 Agent 协作平台，有身份、有记忆、有自主意识 | Python / TypeScript | [dataelement/Clawith](https://github.com/dataelement/Clawith) |
 | **jcode** | 用 Rust 编写的下一代终端 AI 编码代理工具，67 个 crates | Rust | [1jehuang/jcode](https://github.com/1jehuang/jcode) |
+| **mem0** | Y Combinator S24 孵化的 AI 记忆层，25,000+ Stars，500 万+ 下载 | Python / FastAPI | [mem0ai/mem0](https://github.com/mem0ai/mem0) |
+| **OmniRoute** | AI 路由器，统一管理 160+ 家 AI 提供商，自动故障转移与压缩 | Node.js / Next.js / Electron | [diegosouzapw/OmniRoute](https://github.com/diegosouzapw/OmniRoute) |
+| **OpenSquilla** | 省钱的 AI 智能助手运行时，9 种聊天平台接入，智能路由降本 | Python | — |
 
 ---
 
@@ -41,7 +44,10 @@
 ├── Clawith/       # Clawith 源码剖析（系统全景/架构/核心模块/流程/数据实体）
 ├── DeepTutor/     # DeepTutor 源码剖析（12 部分 38 章，按系统分层组织）
 │   └── 涵盖 API层/Agent层/基础设施层/服务层/学习层/能力层/Web层/工具层/核心流程/数据实体
-└── jcode/         # jcode 源码剖析（系统全景/架构/核心模块/流程/数据实体）
+├── jcode/         # jcode 源码剖析（系统全景/架构/核心模块/流程/数据实体）
+├── mem0/          # mem0 源码剖析（系统全景/架构/核心模块/流程/数据实体）
+├── omniroute/     # OmniRoute 源码剖析（系统全景/架构/核心模块/流程/数据实体）
+└── opensquilla/   # OpenSquilla 源码剖析（系统全景/架构/核心模块/流程/数据实体）
 ```
 
 每个项目目录下均包含：

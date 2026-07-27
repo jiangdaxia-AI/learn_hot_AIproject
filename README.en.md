@@ -12,7 +12,7 @@
   <a href="https://github.com/jiangdaxia-AI/learn_hot_AIproject"><img src="https://img.shields.io/github/repo-size/jiangdaxia-AI/learn_hot_AIproject?label=Repo%20Size" alt="Repo Size"></a>
   <a href="https://github.com/jiangdaxia-AI/learn_hot_AIproject"><img src="https://img.shields.io/github/languages/count/jiangdaxia-AI/learn_hot_AIproject?label=Languages" alt="Languages"></a>
   <img src="https://img.shields.io/badge/updated-continuously-brightgreen?label=Update" alt="Continuously Updated">
-  <img src="https://img.shields.io/badge/projects-3%20%26%20growing-blue?label=Projects" alt="Projects">
+  <img src="https://img.shields.io/badge/projects-6%20%26%20growing-blue?label=Projects" alt="Projects">
 </p>
 
 ---
@@ -30,8 +30,11 @@ This repository deep-dives into trending AI open-source projects at the **source
 | Project | Description | Tech Stack | Source Repo |
 |---------|-------------|------------|-------------|
 | **DeepTutor** | AI-driven lifelong personalized tutoring system by HKUDS Lab, multi-agent architecture | Python / FastAPI / RAG | [HKUDS/DeepTutor](https://github.com/HKUDS/DeepTutor) |
-| **Clawith** | Open-sourced by dataelement, 6-layer architecture, 16,323 code nodes | — | [dataelement/Clawith](https://github.com/dataelement/Clawith) |
+| **Clawith** | Open-source multi-agent collaboration platform by dataelement — agents with identity, memory, and autonomy | Python / TypeScript | [dataelement/Clawith](https://github.com/dataelement/Clawith) |
 | **jcode** | Next-gen terminal AI coding agent written in Rust, 67 crates | Rust | [1jehuang/jcode](https://github.com/1jehuang/jcode) |
+| **mem0** | Memory layer for AI, Y Combinator S24, 25,000+ Stars, 5M+ downloads | Python / FastAPI | [mem0ai/mem0](https://github.com/mem0ai/mem0) |
+| **OmniRoute** | AI router — unified access to 160+ providers, auto failover & compression | Node.js / Next.js / Electron | [diegosouzapw/OmniRoute](https://github.com/diegosouzapw/OmniRoute) |
+| **OpenSquilla** | Cost-saving AI assistant runtime, 9 chat platforms, intelligent routing | Python | — |
 
 ---
 
@@ -41,7 +44,10 @@ This repository deep-dives into trending AI open-source projects at the **source
 ├── Clawith/       # Clawith source-code analysis (overview/architecture/modules/flow/entities)
 ├── DeepTutor/     # DeepTutor source-code analysis (12 parts, 38 chapters, layered)
 │   └── API / Agent / Infrastructure / Service / Learning / Ability / Web / Tool / Flow / Entities
-└── jcode/         # jcode source-code analysis (overview/architecture/modules/flow/entities)
+├── jcode/         # jcode source-code analysis (overview/architecture/modules/flow/entities)
+├── mem0/          # mem0 source-code analysis (overview/architecture/modules/flow/entities)
+├── omniroute/     # OmniRoute source-code analysis (overview/architecture/modules/flow/entities)
+└── opensquilla/   # OpenSquilla source-code analysis (overview/architecture/modules/flow/entities)
 ```
 
 Each project directory contains:
