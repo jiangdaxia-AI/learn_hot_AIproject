@@ -1,6 +1,6 @@
 # 03-06 · OpenSSE 协议 — 深度剖析
 
-> **文件数**：open-sse/ | **核心**：14 个执行器 | **功能**：Web 客户端模拟 + OpenAI 兼容 API | **codegraph**：29 个符号
+> **文件数**：open-sse/ | **核心**：60+ 个执行器 | **功能**：Web 客户端模拟 + OpenAI 兼容 API
 
 ---
 
@@ -22,9 +22,9 @@ OpenSSE 是 OmniRoute 的"万能钥匙"。它通过模拟 Web 浏览器访问 AI
 
 ---
 
-## 一、14 个执行器
+## 一、60+ 个执行器
 
-每个执行器模拟一个 AI 服务的 Web 客户端：
+每个执行器模拟一个 AI 服务的 Web 客户端。实际有 **60+ 个执行器**（`open-sse/executors/` 目录），以下是代表性示例：
 
 | 执行器 | 模拟的服务 | 大白话 |
 |--------|-----------|--------|
@@ -35,13 +35,10 @@ OpenSSE 是 OmniRoute 的"万能钥匙"。它通过模拟 Web 浏览器访问 AI
 | deepseek-web | DeepSeek 网页版 | 免费用 DeepSeek |
 | grok-web | Grok 网页版 | 免费用 Grok |
 | perplexity-web | Perplexity 网页版 | 免费用 Perplexity 搜索 |
-| duckduckgo-web | DuckDuckGo AI | 免费用 DuckDuckGo 的 AI 聊天 |
-| huggingchat | HuggingChat | 免费用开源模型 |
-| kiro | Kiro AI | 使用 Kiro 的免费额度 |
-| lmarena | LMSYS Chatbot Arena | 使用 Arena 的免费额度 |
-| muse-spark-web | Muse Spark | 使用 Muse 的免费额度 |
-| antigravity | Antigravity IDE | 使用 Google Cloud Code Assist |
-| bedrock | AWS Bedrock | 使用 AWS Bedrock 的 SSE 流式 |
+| gemini-web | Google Gemini 网页版 | 免费用 Gemini |
+| kimi-web | 月之暗面 Kimi 网页版 | 免费用 Kimi |
+| qwen-web | 通义千问网页版 | 免费用通义千问 |
+| ... | 还有 50+ 个 | 覆盖几乎所有主流 AI 服务 |
 
 > 来源：open-sse/executors/ 目录
 
@@ -111,7 +108,7 @@ CommandCode 状态机管理整个 Device Code 流程：
 
 | 设计决策 | 大白话 |
 |----------|--------|
-| 14 个执行器各自独立 | 一个执行器挂了不影响其他，像"每个试听课独立预约" |
+| 60+ 个执行器各自独立 | 一个执行器挂了不影响其他，像"每个试听课独立预约" |
 | 会话复用 | 不用每次请求都重新登录 |
 | 最大会话限制 | 防止被 AI 服务商封号 |
 | Device Code 认证 | 不需要用户输入密码，更安全 |
